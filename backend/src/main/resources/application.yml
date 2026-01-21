@@ -1,0 +1,38 @@
+spring:
+  application:
+    name: hospital-queue-system
+
+  security:
+    user:
+      name: admin
+      password: admin
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/hospital_queue_db?useSSL=false&serverTimezone=UTC
+    username: root
+    password: sdlove01
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+
+#  security:
+#    jwt:
+#      secret: your-secret-key-min-256-bits-long-change-this-in-production
+#      expiration: 86400000 # 24 hours
+
+server:
+  port: 8081
+
+ml:
+  service:
+    url: http://localhost:5000
+
+cors:
+  allowed-origins: http://localhost:3000,http://localhost:5173
