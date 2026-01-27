@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class DashboardStatsResponse {
+public class DashboardStatusResponse {
     private Long totalTokensToday;
     private Long completedTokens;
     private Long waitingTokens;
