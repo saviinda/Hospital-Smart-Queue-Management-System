@@ -9,14 +9,15 @@ import com.hospital.queue.repository.DepartmentRepository;
 import com.hospital.queue.repository.TokenRepository;
 import com.hospital.queue.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,7 +28,7 @@ public class TokenService {
     private final UserRepository userRepository;
     private final DepartmentRepository departmentRepository;
     private final MLPredictionService mlPredictionService;
-    private final SimpMessagingTemplate messagingTemplate;
+    private final WebSocketService webSocketService;
     private final QueueAnalyticsService analyticsService;
 
     @Transactional
@@ -50,12 +51,19 @@ public class TokenService {
         token.setEstimatedWaitTime(estimatedWait);
 
         Token savedToken = tokenRepository.save(token);
-
-        // Broadcast to WebSocket
         TokenResponse response = mapToResponse(savedToken, user, department);
-        messagingTemplate.convertAndSend(
-                "/topic/queue/" + request.getDepartmentId(),
-                response
+
+        // Broadcast new token creation
+        webSocketService.broadcastNewToken(request.getDepartmentId(), response);
+
+        // Update queue stats
+        updateAndBroadcastQueueStats(request.getDepartmentId());
+
+        // Send notification to user
+        webSocketService.sendUserNotification(
+                request.getUserId(),
+                "Your token " + token.getTokenNumber() + " has been created. Estimated wait time: " + estimatedWait + " minutes",
+                "SUCCESS"
         );
 
         return response;
@@ -99,6 +107,19 @@ public class TokenService {
             // Calculate actual wait time
             Duration waitDuration = Duration.between(token.getBookingTime(), LocalDateTime.now());
             token.setActualWaitTime((int) waitDuration.toMinutes());
+
+            // Notify user that it's their turn
+            User user = userRepository.findById(token.getUserId()).orElse(null);
+            Department department = departmentRepository.findById(token.getDepartmentId()).orElse(null);
+
+            if (user != null && department != null) {
+                webSocketService.sendTokenCallNotification(
+                        token.getUserId(),
+                        token.getTokenNumber(),
+                        department.getName()
+                );
+            }
+
         } else if (status == Token.TokenStatus.COMPLETED) {
             token.setServiceEndTime(LocalDateTime.now());
 
@@ -112,18 +133,63 @@ public class TokenService {
                 // Update analytics
                 analyticsService.recordTokenCompletion(token, (int) serviceDuration.toMinutes());
             }
+
+            // Send completion notification
+            webSocketService.sendUserNotification(
+                    token.getUserId(),
+                    "Your consultation for token " + token.getTokenNumber() + " has been completed. Thank you!",
+                    "INFO"
+            );
+
+        } else if (status == Token.TokenStatus.CANCELLED) {
+            // Broadcast cancellation
+            webSocketService.broadcastTokenCancellation(
+                    token.getDepartmentId(),
+                    token.getId(),
+                    token.getTokenNumber()
+            );
+
+            webSocketService.sendUserNotification(
+                    token.getUserId(),
+                    "Your token " + token.getTokenNumber() + " has been cancelled.",
+                    "WARNING"
+            );
         }
 
         Token updated = tokenRepository.save(token);
         TokenResponse response = mapToResponse(updated);
 
-        // Broadcast update
-        messagingTemplate.convertAndSend(
-                "/topic/queue/" + token.getDepartmentId(),
-                response
+        // Broadcast status change
+        webSocketService.broadcastStatusChange(
+                token.getDepartmentId(),
+                token.getId(),
+                oldStatus,
+                status
         );
 
+        // Broadcast updated token
+        webSocketService.broadcastTokenUpdate(token.getDepartmentId(), response);
+
+        // Update queue stats
+        updateAndBroadcastQueueStats(token.getDepartmentId());
+
         return response;
+    }
+
+    private void updateAndBroadcastQueueStats(Long departmentId) {
+        Long waitingCount = tokenRepository.countByDepartmentIdAndStatus(
+                departmentId,
+                Token.TokenStatus.WAITING
+        );
+
+        Double avgWaitTime = tokenRepository.getAverageWaitTimeByDepartment(departmentId);
+
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("queueLength", waitingCount);
+        stats.put("averageWaitTime", avgWaitTime != null ? avgWaitTime : 0.0);
+        stats.put("timestamp", System.currentTimeMillis());
+
+        webSocketService.broadcastQueueStats(departmentId, stats);
     }
 
     private String generateTokenNumber(Long departmentId) {
