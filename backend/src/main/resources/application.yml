@@ -7,6 +7,10 @@ spring:
       name: admin
       password: admin
 
+    jwt:
+      secret: HOSPITAL_QUEUE_9F3A2B8D7C1E5A6F9D3C2B1A
+      expiration: 86400000 # 24 hours
+
   datasource:
     url: jdbc:mysql://localhost:3306/hospital_queue_db?useSSL=false&serverTimezone=UTC
     username: root
@@ -21,11 +25,6 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
-
-#  security:
-#    jwt:
-#      secret: your-secret-key-min-256-bits-long-change-this-in-production
-#      expiration: 86400000 # 24 hours
 
 server:
   port: 8081
