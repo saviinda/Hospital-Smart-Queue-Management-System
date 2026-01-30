@@ -32,7 +32,7 @@ public class WebSocketService {
     public void broadcastQueueStats(Long departmentId, Map<String, Object> stats) {
         String destination = "/topic/queue/" + departmentId + "/stats";
         log.info("Broadcasting queue stats to {}", destination);
-        messagingTemplate.convertAndSend(destination, stats);
+        messagingTemplate.convertAndSend(destination, (Object) stats);
     }
 
     /**
@@ -47,7 +47,7 @@ public class WebSocketService {
         notification.put("timestamp", System.currentTimeMillis());
 
         log.info("Sending notification to user {}: {}", userId, message);
-        messagingTemplate.convertAndSend(destination, notification);
+        messagingTemplate.convertAndSend(destination, (Object) notification);
     }
 
     /**
@@ -64,7 +64,7 @@ public class WebSocketService {
 
         log.info("Broadcasting status change for token {} from {} to {}",
                 tokenId, oldStatus, newStatus);
-        messagingTemplate.convertAndSend(destination, statusChange);
+        messagingTemplate.convertAndSend(destination, (Object) statusChange);
     }
 
     /**
@@ -88,7 +88,7 @@ public class WebSocketService {
         cancellation.put("timestamp", System.currentTimeMillis());
 
         log.info("Broadcasting token cancellation: {}", tokenNumber);
-        messagingTemplate.convertAndSend(destination, cancellation);
+        messagingTemplate.convertAndSend(destination, (Object) cancellation);
     }
 
     /**
@@ -112,7 +112,7 @@ public class WebSocketService {
         alert.put("timestamp", System.currentTimeMillis());
 
         log.info("Sending admin alert: {} ({})", message, severity);
-        messagingTemplate.convertAndSend(destination, alert);
+        messagingTemplate.convertAndSend(destination, (Object) alert);
     }
 
     /**
@@ -128,7 +128,7 @@ public class WebSocketService {
 
         log.info("Broadcasting wait time update: {} min for {} people",
                 estimatedWaitTime, queueLength);
-        messagingTemplate.convertAndSend(destination, waitTimeUpdate);
+        messagingTemplate.convertAndSend(destination, (Object) waitTimeUpdate);
     }
 
     /**
@@ -144,6 +144,6 @@ public class WebSocketService {
         callNotification.put("timestamp", System.currentTimeMillis());
 
         log.info("Sending call notification to user {}: {}", userId, tokenNumber);
-        messagingTemplate.convertAndSend(destination, callNotification);
+        messagingTemplate.convertAndSend(destination, (Object) callNotification);
     }
 }

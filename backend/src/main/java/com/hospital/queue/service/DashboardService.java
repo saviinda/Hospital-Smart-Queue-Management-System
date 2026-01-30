@@ -1,6 +1,6 @@
 package com.hospital.queue.service;
 
-import com.hospital.queue.dto.DashboardStatsResponse;
+import com.hospital.queue.dto.DashboardStatusResponse;
 import com.hospital.queue.entity.Token;
 import com.hospital.queue.repository.TokenRepository;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +15,7 @@ public class DashboardService {
 
     private final TokenRepository tokenRepository;
 
-    public DashboardStatsResponse getTodayStats(Long departmentId) {
+    public DashboardStatusResponse getTodayStats(Long departmentId) {
         LocalDateTime startOfDay = LocalDateTime.now().with(LocalTime.MIN);
         LocalDateTime endOfDay = LocalDateTime.now().with(LocalTime.MAX);
 
@@ -42,13 +42,14 @@ public class DashboardService {
 
         Double avgWaitTime = tokenRepository.getAverageWaitTimeByDepartment(departmentId);
 
-        return new DashboardStatsResponse(
+        return new DashboardStatusResponse(
                 totalTokens,
                 completed,
                 waiting,
                 cancelled,
                 avgWaitTime != null ? avgWaitTime : 0.0,
-                waiting.intValue()
+                Math.toIntExact(waiting)
+
         );
     }
 }
