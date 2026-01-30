@@ -1,6 +1,7 @@
 package com.hospital.queue.controller;
 
-import com.hospital.queue.dto.DashboardStatsResponse;
+import com.hospital.queue.dto.DashboardStatusResponse;
+import com.hospital.queue.dto.DashboardStatusResponse;
 import com.hospital.queue.service.DashboardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -15,8 +16,8 @@ public class DashboardController {
     private final DashboardService dashboardService;
 
     @GetMapping("/stats/{departmentId}")
-    public ResponseEntity<DashboardStatsResponse> getDepartmentStats(@PathVariable Long departmentId) {
-        DashboardStatsResponse stats = dashboardService.getTodayStats(departmentId);
+    public ResponseEntity<DashboardStatusResponse> getDepartmentStats(@PathVariable Long departmentId) {
+        DashboardStatusResponse stats = dashboardService.getTodayStats(departmentId);
         return ResponseEntity.ok(stats);
     }
 }
